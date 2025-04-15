@@ -1,0 +1,28 @@
+.paper-list-page {
+  padding: 16px;
+
+  .v-card {
+    border-radius: 25px;
+    padding: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+
+  .search-section {
+
+    .v-text-field,
+    .v-select {
+      margin-bottom: 8px;
+    }
+  }
+
+  .list-section {
+    .v-data-table {
+      border-radius: 8px;
+
+      .v-btn {
+        min-width: auto;
+      }
+    }
+  }
+}

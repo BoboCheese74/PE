@@ -1,0 +1,209 @@
+.page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+
+  .theme-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+  }
+
+  .login-card {
+    display: flex;
+    margin: 0 25% 0 auto;
+    border-radius: 50px;
+    height: 475px;
+    min-width: 800px;
+    backdrop-filter: blur(3px);
+    transition: all 0.5s ease;
+
+    .card-header {
+      --size: 800px;
+      --speed: 50s;
+      --easing: cubic-bezier(0.8, 0.2, 0.2, 0.8);
+      --base-color: 111, 40, 77;
+
+      display: flex;
+      overflow: hidden;
+      flex-direction: row;
+      background-color: rgba(var(--base-color));
+      height: 100%;
+      width: 800px;
+      position: absolute;
+      margin-bottom: 30px;
+      padding: 20px;
+      z-index: 1;
+      clip-path: rect(0 375px 100% 0 round 15px);
+      transition: all 0.5s ease;
+
+      .in-content {
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+        padding-right: 20px;
+        color: rgba(0, 0, 0, 0.329);
+        left: 400px;
+        width: 50%;
+        height: 100%;
+
+        .tittle-content {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          margin: 20% auto 0 0;
+
+          .logo {
+            width: 50px;
+            height: 50px;
+            margin: 0 auto;
+            background-image: url("https://cdn.jsdelivr.net/gh/yangzhongzhu/yangzhongzhu.github.io@master/img/logo.png");
+            background-size: cover;
+            border-radius: 50%;
+          }
+
+          .title {
+            margin-left: 15px;
+            font-size: 40px;
+            font-weight: 600;
+            color: #ffffff;
+          }
+        }
+
+        .comment {
+          display: flex;
+          margin-top: auto;
+          margin-bottom: 30px;
+          flex-direction: row;
+
+          h4 {
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.507);
+          }
+
+          .in-active {
+            margin: 0 5px 0 5px;
+            cursor: pointer;
+          }
+        }
+      }
+
+      .up-content {
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+        padding-left: 20px;
+        color: rgba(0, 0, 0, 0.329);
+        width: 50%;
+        height: 100%;
+
+        .tittle-content {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          margin: 20% auto 0 0;
+
+          .logo {
+            width: 50px;
+            height: 50px;
+            margin: 0 auto;
+            background-image: url("https://cdn.jsdelivr.net/gh/yangzhongzhu/yangzhongzhu.github.io@master/img/logo.png");
+            background-size: cover;
+            border-radius: 50%;
+          }
+
+          .title {
+            margin-left: 15px;
+            font-size: 40px;
+            font-weight: 600;
+            color: #ffffff;
+          }
+        }
+
+        .comment {
+          display: flex;
+          margin-top: auto;
+          margin-bottom: 30px;
+          flex-direction: row;
+
+          h4 {
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.507);
+          }
+
+          .up-active {
+            margin: 0 5px 0 5px;
+            color: rgba(0, 0, 255, 0.268);
+            cursor: pointer;
+          }
+        }
+      }
+    }
+
+    .main-form {
+      display: flex;
+      flex-direction: row;
+
+      .signup-sheet {
+        display: flex;
+        flex-direction: row;
+
+        .signup-form {
+          margin-top: 30px;
+          padding: 30px;
+          width: 400px;
+
+          .input {
+            border-radius: 20px;
+
+            :deep(.v-field--variant-filled) {
+              border-radius: 15px 15px 0 0;
+            }
+          }
+
+          .btn-content {
+            display: flex;
+
+            .sigup-btn {
+              margin-left: auto;
+              height: 45px;
+              border-radius: 5px 5px 15px 15px;
+            }
+          }
+        }
+      }
+
+
+      .signin-sheet {
+        display: flex;
+        flex-direction: row;
+
+        .signin-form {
+          margin-top: 30px;
+          padding: 30px;
+          width: 400px;
+
+          .input {
+            border-radius: 20px;
+
+            :deep(.v-field--variant-filled) {
+              border-radius: 15px 15px 0 0;
+            }
+          }
+
+          .btn-content {
+            display: flex;
+
+            .sigin-btn {
+              margin-left: auto;
+              height: 45px;
+              border-radius: 5px 5px 15px 15px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
