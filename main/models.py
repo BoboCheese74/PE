@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 
 class User(BaseModel):
@@ -51,3 +51,24 @@ class TokenData(BaseModel):
 
     username: Optional[str] = None
     role: Optional[str] = None
+
+
+class LoginResponse(BaseModel):
+    """
+    登录响应模型，表示登录接口的响应格式。
+
+    属性:
+        code: 响应代码
+        message: 响应消息
+        succeed: 是否成功
+        access_token: 访问令牌字符串
+        token_type: 令牌类型
+        data: 附加数据
+    """
+
+    code: int
+    message: str
+    succeed: bool
+    access_token: str
+    token_type: str
+    data: Dict

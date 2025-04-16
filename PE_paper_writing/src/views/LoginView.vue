@@ -1,7 +1,11 @@
 <template>
   <div class="page">
-    <v-btn :icon="theme.global.current.value.dark ? 'mdi-weather-night' : 'mdi-weather-sunny'" class="theme-btn"
-      variant="text" @click="toggleTheme"></v-btn>
+    <v-btn
+      :icon="theme.global.current.value.dark ? 'mdi-weather-night' : 'mdi-weather-sunny'"
+      class="theme-btn"
+      variant="text"
+      @click="toggleTheme"
+    ></v-btn>
     <v-card class="login-card" variant="tonal">
       <div class="card-header" :style="{ ...headerStyle, 'clip-path': sliderOffset }">
         <div class="in-content">
@@ -30,33 +34,52 @@
       <div class="main-form">
         <v-sheet class="signup-sheet">
           <v-form ref="signupForm" class="signup-form">
-            <v-text-field class="input username-input" v-model="signupUser.username" :rules="UPusernameRules"
-              label="用户名"></v-text-field>
+            <v-text-field
+              class="input username-input"
+              v-model="signupUser.username"
+              :rules="UPusernameRules"
+              label="用户名"
+            ></v-text-field>
 
-            <v-text-field class="input password-inpur" v-model="signupUser.password" :rules="UPpasswordRules"
-              label="密码"></v-text-field>
+            <v-text-field
+              class="input password-inpur"
+              v-model="signupUser.password"
+              :rules="UPpasswordRules"
+              label="密码"
+            ></v-text-field>
 
-            <v-text-field class="input invitation-code-input" v-model="signupUser.invitation_code"
-              :rules="UPinvitationCodeRules" label="邀请码"></v-text-field>
+            <v-text-field
+              class="input invitation-code-input"
+              v-model="signupUser.invitation_code"
+              :rules="UPinvitationCodeRules"
+              label="邀请码"
+            ></v-text-field>
 
             <div class="btn-content">
-              <v-btn class="sigup-btn" color="success" type="submit" block>
+              <v-btn class="sigup-btn" color="success" type="submit" :loading="loading" block>
                 注册
               </v-btn>
             </div>
-
           </v-form>
         </v-sheet>
         <v-sheet class="signin-sheet">
           <v-form ref="signinForm" class="signin-form" @submit.prevent="siginBtn">
-            <v-text-field class="input username-input" v-model="signinUser.username" :rules="INusernameRules"
-              label="用户名"></v-text-field>
+            <v-text-field
+              class="input username-input"
+              v-model="signinUser.username"
+              :rules="INusernameRules"
+              label="用户名"
+            ></v-text-field>
 
-            <v-text-field class="input password-inpur" v-model="signinUser.password" :rules="INpasswordRules"
-              label="密码"></v-text-field>
+            <v-text-field
+              class="input password-inpur"
+              v-model="signinUser.password"
+              :rules="INpasswordRules"
+              label="密码"
+            ></v-text-field>
 
             <div class="btn-content">
-              <v-btn class="sigin-btn" color="success" type="submit" block>
+              <v-btn class="sigin-btn" color="success" type="submit" :loading="loading" block>
                 登录
               </v-btn>
             </div>
@@ -74,9 +97,13 @@ import { computed } from 'vue'
 import { signupRules } from '@/rules/signupInfo.ts'
 import { signinRules } from '@/rules/signinInfo.ts'
 import { useSnackbar } from '@/plugins/snackbar.ts'
+import { useUserInfoStore } from '@/stores/userinfo.store'
+import { loginApi } from '@/apis/login'
 import router from '@/router'
 
 const snackbar = useSnackbar()
+const userInfoStore = useUserInfoStore()
+const loading = ref(false)
 
 // 登录表单————————————————————————————————————————————————————————
 const signinUser = ref({
@@ -88,15 +115,39 @@ const INusernameRules = signinRules.username
 const INpasswordRules = signinRules.password
 
 const siginBtn = async () => {
-  const isValid = await signinForm.value.validate()
-  console.log('登录表单验证结果:', isValid)
-  if (isValid) {
-    // 这里可以添加登录逻辑
-    snackbar.show({ text: '登录成功', location: 'top', })
-    router.push('/')
-  } else {
-    console.log('登录失败')
-    snackbar.show({ text: '登录失败', color: 'error' })
+  try {
+    loading.value = true
+    const isValid = await signinForm.value.validate()
+    console.log('登录表单验证结果:', isValid)
+    if (isValid) {
+      console.log('登录数据:', signinUser.value)
+
+      // 创建表单数据
+      const formData = new URLSearchParams()
+      formData.append('username', signinUser.value.username)
+      formData.append('password', signinUser.value.password)
+
+      // 调用登录API，传递表单数据
+      const res = await loginApi(formData)
+
+      console.log('登录响应:', res)
+
+      // 处理返回的token
+      const token = res.access_token
+
+      if (token) {
+        // 存储token和用户数据
+        userInfoStore.setAuth(token, JSON.stringify(res.data))
+
+        // 显示成功消息
+        snackbar.show({ text: '登录成功', location: 'top' })
+
+        // 登录成功后导航到主页
+        router.push('/')
+      }
+    }
+  } finally {
+    loading.value = false
   }
 }
 
@@ -139,7 +190,7 @@ const headerStyle = computed(() => {
 const cbStyle = computed(() => {
   let isDark = theme.global.current.value.dark
   return {
-    'color': isDark ? 'rgb(0, 204, 255)' : 'rgba(0, 0, 255, 0.400)',
+    color: isDark ? 'rgb(0, 204, 255)' : 'rgba(0, 0, 255, 0.400)',
   }
 })
 

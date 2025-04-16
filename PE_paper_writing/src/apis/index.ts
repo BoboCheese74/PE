@@ -1,7 +1,7 @@
 import router from '@/router'
 import axios, { AxiosError, type AxiosRequestConfig } from 'axios'
-import { useLoadingStore } from '@/stores/loading.ts'
 import { useSnackbar } from '@/plugins/snackbar.ts'
+import { useUserInfoStore } from '@/stores/userinfo.store'
 
 export const httpInstance = axios.create()
 
@@ -17,10 +17,8 @@ httpInstance.defaults.baseURL = import.meta.env.VITE_API_URL
 
 //响应拦截器
 export const $http = async (config: AxiosRequestConfig) => {
-  const loading = useLoadingStore()
   const snackbar = useSnackbar() // 获取snackbar实例
-
-  loading.start() // 开始加载
+  const userInfoStore = useUserInfoStore()
 
   try {
     const axiosResponse = await httpInstance<bkResponse>(config)
@@ -28,9 +26,17 @@ export const $http = async (config: AxiosRequestConfig) => {
     if (!bkResponse?.succeed) {
       let errTitle: string = 'Error'
       switch (bkResponse.code) {
+        case 400:
+          errTitle = 'Bad Request'
+          userInfoStore.removeAuth()
+          snackbar.show({ text: '如果用户被标记为禁用状态', color: 'error' })
+          router.push('/login')
+          break
         case 401:
           errTitle = 'Unauthorized'
+          userInfoStore.removeAuth()
           snackbar.show({ text: '未授权', color: 'error' })
+          router.push('/login')
           break
         case 403:
           errTitle = 'Forbidden'
@@ -61,7 +67,5 @@ export const $http = async (config: AxiosRequestConfig) => {
       snackbar.show({ text: '网络错误', color: 'error' })
     }
     throw err
-  } finally {
-    loading.end() // 结束加载
   }
 }

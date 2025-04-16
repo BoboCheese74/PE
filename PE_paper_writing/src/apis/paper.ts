@@ -5,6 +5,7 @@ export const generateOutlineAPI = (params: { language: string; title: string; LL
     method: 'GET',
     url: '/generate_outline',
     params,
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` || '' },
   })
 }
 
@@ -13,6 +14,7 @@ export const getKeywordAPI = (params: { content: string }) => {
     method: 'GET',
     url: '/get_keyword',
     params,
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` || '' },
   })
 }
 
@@ -21,19 +23,21 @@ export const searchPubmedAPI = (params: { keywords: string }) => {
     method: 'GET',
     url: '/search_pubmed',
     params,
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` || '' },
   })
 }
 
 export const editAPI = (params: {
   language: string
   title: string
+  LLM?: string
   prompt_outline: string
   paper: string
-  LLM: string
 }) => {
   return $http({
     method: 'GET',
     url: '/edit',
-    data: params,
+    params,
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` || '' },
   })
 }

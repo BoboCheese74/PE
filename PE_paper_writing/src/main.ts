@@ -8,16 +8,20 @@ import SvgIcon from '@/components/SvgIcon.vue'
 import './assets/iconfont/iconfont.js'
 
 import App from './App.vue'
-import router from './router'
 
 // 添加加载中的标记
 document.documentElement.classList.add('loading')
 
 const app = createApp(App)
 
-app.use(createPinia())
-app.use(router)
-app.component('SvgIcon', SvgIcon)
-app.use(vuetify)
+async function asyncRegister() {
+  const createPinia = (await import('pinia')).createPinia
+  app.use(createPinia())
+  const router = (await import('@/router')).default
+  app.use(router)
+  app.component('SvgIcon', SvgIcon)
+  app.use(vuetify)
+  app.mount('#app')
+}
 
-app.mount('#app')
+asyncRegister()

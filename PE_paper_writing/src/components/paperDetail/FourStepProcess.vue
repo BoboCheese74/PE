@@ -15,7 +15,7 @@
 
     <!-- 步骤内容 -->
     <div class="step-content">
-      <!-- 步骤1：关键词 -->
+      <!-- 步骤1：关键词输入 -->
       <div class="mb-4">
         <v-text-field
           v-model="localData.keywords"
@@ -41,7 +41,7 @@
         <v-divider></v-divider>
       </div>
 
-      <!-- 步骤2：提纲 -->
+      <!-- 步骤2：提纲显示与编辑 -->
       <div v-if="currentStep >= 2" class="mb-4">
         <v-textarea
           v-model="localData.outline"
@@ -60,6 +60,7 @@
           variant="text"
           color="primary"
           class="mx-2 regenerate-btn"
+          :loading="loading"
           @click="regenerateOutline"
         >
           重新生成
@@ -67,7 +68,7 @@
         <v-divider></v-divider>
       </div>
 
-      <!-- 步骤3：提纲关键词 -->
+      <!-- 步骤3：提纲关键词显示与编辑 -->
       <div v-if="currentStep >= 3" class="mb-4">
         <v-textarea
           v-model="localData.outlineKeywords"
@@ -85,6 +86,7 @@
           variant="text"
           color="primary"
           class="mx-2 regenerate-btn"
+          :loading="loading"
           @click="regenerateContent"
         >
           重新生成
@@ -92,7 +94,7 @@
         <v-divider></v-divider>
       </div>
 
-      <!-- 步骤4：正文 -->
+      <!-- 步骤4：正文显示与编辑 -->
       <div v-if="currentStep >= 4" class="mb-4">
         <v-textarea
           v-model="localData.content"
@@ -104,8 +106,9 @@
       </div>
     </div>
 
-    <!-- 步骤按钮 -->
+    <!-- 步骤控制按钮 -->
     <div class="step-actions mt-6">
+      <!-- 步骤1的生成按钮 -->
       <v-btn
         v-if="currentStep === '1'"
         color="primary"
@@ -116,6 +119,7 @@
         生成
       </v-btn>
 
+      <!-- 步骤2-4的导航按钮 -->
       <div v-else class="d-flex">
         <v-btn v-if="currentStep > 1" variant="outlined" class="me-4" @click="previousStep">
           上一步
@@ -135,9 +139,16 @@ import { generateOutlineAPI, getKeywordAPI, searchPubmedAPI, editAPI } from '@/a
 import { useSnackbar } from '@/plugins/snackbar.ts'
 import { paperRules } from '@/rules/paper4'
 
+/**
+ * 使用提示消息插件
+ */
 const snackbar = useSnackbar()
 
+/**
+ * 组件属性定义
+ */
 const props = defineProps({
+  // 论文处理数据，包含关键词、提纲、提纲关键词和正文内容
   processData: {
     type: Object,
     default: () => ({
@@ -149,14 +160,26 @@ const props = defineProps({
   },
 })
 
+/**
+ * 组件事件定义
+ */
 const emits = defineEmits(['update:process-data', 'complete', 'next', 'previous'])
 
+/**
+ * 组件状态
+ */
+// 当前步骤，从1开始
 const currentStep = ref('1')
+// 本地数据，用于双向绑定
 const localData = ref({ ...props.processData })
+// 加载状态
 const loading = ref(false)
+// 错误信息
 const errorMessage = ref('')
 
-// 监听属性变化
+/**
+ * 监听属性变化，同步到本地数据
+ */
 watch(
   () => props.processData,
   (newVal) => {
@@ -165,12 +188,18 @@ watch(
   { deep: true },
 )
 
-// 更新数据并发出事件
+/**
+ * 更新数据并发出事件
+ * 将本地数据同步回父组件
+ */
 function updateData() {
   emits('update:process-data', { ...localData.value })
 }
 
-// 生成内容（步骤1）
+/**
+ * 步骤1：根据关键词生成提纲
+ * 调用后端API生成论文提纲
+ */
 async function generate1() {
   try {
     loading.value = true
@@ -178,8 +207,8 @@ async function generate1() {
     // 调用API生成提纲
     const response = await generateOutlineAPI({
       title: localData.value.keywords, // 关键词作为title参数
-      language: '中文', // 默认中文
-      LLM: 'deepseek', // 默认LLM模型
+      language: '中文', // 默认使用中文
+      LLM: 'deepseek', // 默认使用deepseek模型
     })
 
     // 检查响应状态
@@ -192,6 +221,7 @@ async function generate1() {
 
       // 进入下一步
       currentStep.value = '2'
+      emits('next', currentStep.value)
     } else {
       // 处理非200状态码
       errorMessage.value = response.message || '生成提纲失败，请稍后重试'
@@ -206,9 +236,10 @@ async function generate1() {
   }
 }
 
-async function generate2() {}
-
-// 生成提纲关键词（步骤2）
+/**
+ * 步骤2：根据提纲生成关键词
+ * 提取提纲中的关键词用于后续PubMed搜索
+ */
 async function fetchOutlineKeywords() {
   try {
     loading.value = true
@@ -247,29 +278,125 @@ async function fetchOutlineKeywords() {
   }
 }
 
-// 重新生成内容
-function regenerate() {
-  generate1()
-  // 实现重新生成逻辑
+/**
+ * 步骤3：生成论文正文
+ * 根据提纲关键词搜索PubMed，获取相关论文，然后生成正文
+ */
+async function fetchContentWithPubmed() {
+  try {
+    loading.value = true
+
+    // 检查提纲关键词是否存在
+    if (!localData.value.outlineKeywords || localData.value.outlineKeywords.length === 0) {
+      snackbar.show({ text: '提纲关键词不能为空', color: 'warning' })
+      return { success: false }
+    }
+
+    console.log('提纲关键词:', localData.value.outlineKeywords)
+
+    // 1. 首先调用searchPubmedAPI获取相关论文
+    const pubmedResponse = await searchPubmedAPI({
+      keywords: localData.value.outlineKeywords,
+    })
+
+    if (pubmedResponse.code !== 200) {
+      snackbar.show({
+        text: pubmedResponse.message || 'PubMed搜索失败，请稍后重试',
+        color: 'error',
+      })
+      return { success: false }
+    }
+
+    // 获取pubmed返回的papers数据
+    // 后端返回的数据格式是 { papers: ['文献[1]:摘要内容', '文献[2]:摘要内容', ...] }
+    // 需要将其连接成一个字符串
+    let papers = String(pubmedResponse.data.papers || '')
+
+    console.log('处理后的PubMed论文数据:', papers.substring(0, 100) + '...')
+
+    // 2. 然后使用pubmed数据调用editAPI生成正文
+    const editResponse = await editAPI({
+      language: '中文',
+      title: localData.value.keywords,
+      LLM: 'deepseek',
+      prompt_outline: localData.value.outline,
+      paper: papers,
+    })
+
+    if (editResponse.code !== 200) {
+      snackbar.show({
+        text: editResponse.message || '生成正文失败，请稍后重试',
+        color: 'error',
+      })
+      return { success: false }
+    }
+
+    // 将返回的正文内容设置到表单中
+    localData.value.content = editResponse.data.paper_content
+
+    // 更新数据
+    updateData()
+
+    return { success: true }
+  } catch (error) {
+    console.error('生成正文出错:', error)
+    let errorMsg = '网络请求出错，请检查网络连接'
+
+    // 添加更详细的错误信息
+    if (error.response) {
+      console.error('错误响应:', error.response.data)
+      errorMsg = `错误(${error.response.status}): ${error.response.data.detail || errorMsg}`
+    }
+
+    snackbar.show({
+      text: errorMsg,
+      color: 'error',
+    })
+    return { success: false }
+  } finally {
+    loading.value = false
+  }
 }
 
-// 重新生成提纲关键词
+/**
+ * 重新生成提纲
+ * 使用现有关键词重新生成提纲
+ */
+async function regenerate() {
+  await generate1()
+}
+
+/**
+ * 重新生成提纲关键词
+ * 使用当前提纲重新生成关键词
+ */
 async function regenerateOutline() {
-  console.log('重新生成提纲关键词')
-  await fetchOutlineKeywords()
-  // 注意：这里不需要改变步骤，只是更新关键词
+  const result = await fetchOutlineKeywords()
+  if (result.success) {
+    snackbar.show({ text: '提纲关键词已更新', color: 'success' })
+  }
 }
 
-// 重新生成正文
-function regenerateContent() {
-  console.log('重新生成正文')
-  // 实现重新生成逻辑
+/**
+ * 重新生成正文
+ * 使用当前提纲关键词重新搜索PubMed并生成正文
+ */
+async function regenerateContent() {
+  const result = await fetchContentWithPubmed()
+  if (result.success) {
+    snackbar.show({ text: '正文已更新', color: 'success' })
+  }
 }
 
-// 下一步 - 添加步骤3对接searchPubmedAPI和editAPI
+/**
+ * 处理下一步操作
+ * 根据当前步骤执行不同操作，确保数据正确生成后再进入下一步
+ */
 async function nextStep() {
+  // 先更新数据到父组件
   updateData()
 
+  // 如果是最后一步，触发完成事件
   if (currentStep.value === '4') {
     emits('complete')
     return
@@ -277,96 +404,36 @@ async function nextStep() {
 
   const nextStepNum = parseInt(currentStep.value) + 1
 
-  // 当从步骤2进入步骤3时，调用getKeywordAPI
+  // 根据当前步骤执行不同操作
   if (currentStep.value === '2') {
+    // 从步骤2到步骤3，需要生成提纲关键词
     const result = await fetchOutlineKeywords()
-
     // 只有成功时才进入下一步
     if (result.success) {
       currentStep.value = String(nextStepNum)
       emits('next', currentStep.value)
     }
-  }
-  // 当从步骤3进入步骤4时，调用searchPubmedAPI和editAPI
-  else if (currentStep.value === '3') {
-    try {
-      loading.value = true
-
-      // 检查提纲关键词是否存在
-      if (!localData.value.outlineKeywords || localData.value.outlineKeywords.length === 0) {
-        snackbar.show({ text: '提纲关键词不能为空', color: 'warning' })
-        loading.value = false
-        return
-      }
-
-      console.log('提纲关键词:', localData.value.outlineKeywords)
-
-      // 1. 首先调用searchPubmedAPI
-      const pubmedResponse = await searchPubmedAPI({
-        keywords: localData.value.outlineKeywords,
-      })
-
-      if (pubmedResponse.code !== 200) {
-        snackbar.show({
-          text: pubmedResponse.message || 'PubMed搜索失败，请稍后重试',
-          color: 'error',
-        })
-        loading.value = false
-        return
-      }
-
-      // 获取pubmed返回的papers数据
-      const papers = String(pubmedResponse.data.papers)
-
-      console.log('获取到PubMed论文数据:', papers)
-      console.log('提纲内容:', localData.value.outline)
-      console.log('关键词:', localData.value.keywords)
-
-      // 2. 然后使用pubmed数据调用editAPI
-      const editResponse = await editAPI({
-        language: '中文',
-        title: localData.value.keywords,
-        prompt_outline: localData.value.outline,
-        paper: papers,
-        LLM: 'deepseek',
-      })
-
-      if (editResponse.code !== 200) {
-        snackbar.show({
-          text: editResponse.message || '生成正文失败，请稍后重试',
-          color: 'error',
-        })
-        loading.value = false
-        return
-      }
-
-      // 将返回的正文内容设置到表单中
-      localData.value.content = editResponse.data.paper_content
-
-      // 更新数据
-      updateData()
-
-      // 进入下一步
+  } else if (currentStep.value === '3') {
+    // 从步骤3到步骤4，需要搜索PubMed并生成正文
+    const result = await fetchContentWithPubmed()
+    // 只有成功时才进入下一步
+    if (result.success) {
       currentStep.value = String(nextStepNum)
       emits('next', currentStep.value)
-    } catch (error) {
-      console.error('生成正文出错:', error)
-      snackbar.show({
-        text: '网络请求出错，请检查网络连接',
-        color: 'error',
-      })
-    } finally {
-      loading.value = false
     }
   } else {
-    // 其他步骤直接进入下一步
+    // 其他步骤直接进入下一步（目前只有从步骤1到步骤2）
     currentStep.value = String(nextStepNum)
     emits('next', currentStep.value)
   }
 }
 
-// 上一步
+/**
+ * 处理上一步操作
+ * 保存当前数据并返回上一步
+ */
 function previousStep() {
+  // 先更新数据到父组件
   updateData()
 
   const prevStepNum = parseInt(currentStep.value) - 1
@@ -379,6 +446,7 @@ function previousStep() {
 
 <style lang="scss" scoped>
 .four-step-process {
+  /* 分隔线与按钮的组合样式 */
   .divider-with-button {
     position: relative;
     display: flex;
@@ -393,11 +461,13 @@ function previousStep() {
     }
   }
 
+  /* 步骤操作按钮区域样式 */
   .step-actions {
     display: flex;
     justify-content: flex-end;
   }
 
+  /* 错误消息样式 */
   .error-message {
     color: red;
     font-size: 0.875rem;

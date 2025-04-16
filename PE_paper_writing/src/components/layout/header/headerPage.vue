@@ -1,12 +1,27 @@
 <template>
   <div class="page">
-    <v-text-field v-model="searchQuery" :class="{ 'expanded': isSearching }" class="search-field" density="compact"
-      hide-details placeholder="搜索..." variant="text" prepend-inner-icon="mdi-magnify" clearable
-      :readonly="!isSearching" @click="handleClick" @focus="handleFocus" @blur="handleBlur"
-      @click:clear="handleClear"></v-text-field>
+    <v-text-field
+      v-model="searchQuery"
+      :class="{ expanded: isSearching }"
+      class="search-field"
+      density="compact"
+      hide-details
+      placeholder="搜索..."
+      variant="solo"
+      prepend-inner-icon="mdi-magnify"
+      clearable
+      :readonly="!isSearching"
+      @click="handleClick"
+      @focus="handleFocus"
+      @blur="handleBlur"
+      @click:clear="handleClear"
+    ></v-text-field>
 
-    <v-btn :icon="theme.global.current.value.dark ? 'mdi-weather-night' : 'mdi-weather-sunny'" class="theme-btn"
-      @click="toggleTheme"></v-btn>
+    <v-btn
+      :icon="theme.global.current.value.dark ? 'mdi-weather-night' : 'mdi-weather-sunny'"
+      class="theme-btn"
+      @click="toggleTheme"
+    ></v-btn>
   </div>
 </template>
 
